@@ -1,6 +1,5 @@
 /**
  * Mask converter for input or output string
- * @author TARiK <tarik@bitstore.ru>
  */
 class Mask
 {
@@ -130,11 +129,12 @@ class PhoneMask
 				
 		this.el.addEventListener('textInput', event => this.keyDownEvent(event));		
 		this.el.addEventListener('keydown', event => this.keyDownEvent(event));
+		this.el.addEventListener('focus', event => {if (this.result == this.mask) this.setCursorPosition( this.startFrom);});
 	}
 
 	
 	keyDownEvent(event)
-	{
+	{1
 		/**
 		 * Stop elements for mask, cursor will follow through this characters
 		 */
@@ -147,10 +147,13 @@ class PhoneMask
 
 		if (event.data && !event.key)
 			event.key = event.data;
+
+                if (this.result == this.mask)
+                 this.setCursorPosition( this.startFrom);
+
 		
 		let pos = this.getCursorPosition();
 		
-
 		// For some dumbass browsers converts opcodes to characters
 		if (!event.key && event.which != 229)
 			event.key = String.fromCharCode((96 <= event.which && event.which <= 105) ? event.which-48 : event.which);
@@ -238,9 +241,10 @@ class PhoneMask
 	 */
 	setCursorPosition(pos)
 	{
-		// setSelectionRange BUG fix for android 7 chrome
+		// setSelectionRange BUG fix for android 7 chrome 
 		window.clearTimeout(this.tm);
-		this.tm = window.setTimeout(()=>{this.el.setSelectionRange(pos,pos)}, 0);
+		this.tm = window.setTimeout(()=>{this.el.setSelectionRange(pos,pos)}, 10);		
+		
 	}
 	
 	
