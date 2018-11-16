@@ -134,7 +134,7 @@ class PhoneMask
 
 	
 	keyDownEvent(event)
-	{1
+	{
 		/**
 		 * Stop elements for mask, cursor will follow through this characters
 		 */
@@ -243,7 +243,7 @@ class PhoneMask
 	{
 		// setSelectionRange BUG fix for android 7 chrome 
 		window.clearTimeout(this.tm);
-		this.tm = window.setTimeout(()=>{this.el.setSelectionRange(pos,pos)}, 10);		
+		this.tm = window.setTimeout(()=>{this.el.setSelectionRange(pos,pos)}, 0);		
 		
 	}
 	
