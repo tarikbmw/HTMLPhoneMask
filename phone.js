@@ -241,6 +241,8 @@ class PhoneMask
 	 */
 	setCursorPosition(pos)
 	{
+		this.el.setSelectionRange(pos,pos);
+
 		// setSelectionRange BUG fix for android 7 chrome 
 		window.clearTimeout(this.tm);
 		this.tm = window.setTimeout(()=>{this.el.setSelectionRange(pos,pos)}, 0);		
