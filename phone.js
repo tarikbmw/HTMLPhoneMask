@@ -14,20 +14,18 @@ class Mask
 		 * Stop elements for mask, cursor will follow through this characters
 		 */
 		this.MASK_STOP = ['+', '-', '(', ')', ' '];
-		
 		this.mask 	= mask;
 		this.source = source;
-		this.result = source;		
+		this.result = source;
 		this.startFrom = startFrom;
 	}
-	
+
 	/**
 	 * Encodes masked string to source
 	 * @returns {instanceof Mask}
 	 */
 	from()
 	{
-		
 		this.result  = this.result.slice(this.startFrom, this.result.length);
 
 		for (let i = 0; i < this.MASK_STOP.length; i++)
@@ -36,7 +34,7 @@ class Mask
 
 		return this;
 	}
-	
+
 
 	/**
 	 * Code source string with applyed masked
@@ -45,43 +43,42 @@ class Mask
 	to()
 	{
 		this.result = this.mask;
-		
+
 		for (var pos=0, maskpos=0; maskpos < this.mask.length; pos++)
 		{
 			let char 		= this.mask.charAt(maskpos);
 			let sourceChar 	= this.source.charAt(pos);
-			
-			// Move cursor to first changeable character 
+
+			// Move cursor to first changeable character
 			while(this.MASK_STOP.indexOf(char)>=0 || maskpos <= this.startFrom )
-			{	
-				char = this.mask.charAt(++maskpos);		
-				
+			{
+				char = this.mask.charAt(++maskpos);
+
 				if (maskpos >= this.mask.length)
-					break;				
+					break;
 			}
 
 			// Check source char, and insert to result
 			while( this.MASK_STOP.indexOf(sourceChar)>=0 )
 			{
 				sourceChar = this.source.charAt(++pos);
-				
+
 				if (pos > this.source.length)
 					break;
 			}
-			
+
 			// Copy to result valid data only
 			if (sourceChar >= 0 && sourceChar <= 9)
 				this.result = this.result.substr(0,maskpos) + sourceChar + this.result.substr(++maskpos,this.mask.length);
 		}
-		
-		// Resize out data to mask's size
-		this.result = this.result.slice(0,this.mask.length);		
 
-		
+		// Resize out data to mask's size
+		this.result = this.result.slice(0,this.mask.length);
+
+
 		return this;
 	}
-	
-	
+
 	toString()
 	{
 		return this.result.toString();
@@ -104,35 +101,35 @@ class PhoneMask
 	{
 		if (!(element instanceof HTMLInputElement))
 			throw new Error('PhoneMask failed: element is not instance of HTMLInputElement.');
-				
+
 		this.el 	= element;
 		this.mask 	= mask;
 		this.result = mask;
 		this.startFrom = startFrom;
-		
-		
-		
+
 		if (defaultValue)
 		{
 			let maskedValue = new Mask(this.mask, defaultValue, startFrom);
 			this.result = maskedValue.to().toString();
 		}
-		
+
 		this.el.value = this.result;
-			
+
 		this.el.addEventListener('paste', event=>
 		{
 			// Prevent default events
 			event.preventDefault();
 			event.stopPropagation();
 		});
-				
-		this.el.addEventListener('textInput', event => this.keyDownEvent(event));		
+
+		this.el.addEventListener('input', event => this.keyDownEvent(event));
+		this.el.addEventListener('keypress', event => this.keyDownEvent(event));
+		this.el.addEventListener('textInput', event => this.keyDownEvent(event));
 		this.el.addEventListener('keydown', event => this.keyDownEvent(event));
 		this.el.addEventListener('focus', event => {if (this.result == this.mask) this.setCursorPosition( this.startFrom);});
 	}
 
-	
+
 	keyDownEvent(event)
 	{
 		/**
@@ -140,7 +137,7 @@ class PhoneMask
 		 */
 		const MASK_STOP = ['+', '-', '(', ')', ' '];
 		const MASK_PLACEHOLDER  = '_';
-		
+
 		// Prevent default events
 		event.preventDefault();
 		event.stopPropagation();
@@ -148,26 +145,31 @@ class PhoneMask
 		if (event.data && !event.key)
 			event.key = event.data;
 
+
+		// Replace input value if some shit happened with long pressed keys
+		if (this.el.value.length < this.mask.length)
+			this.el.value = this.result = this.mask;
+
                 if (this.result == this.mask)
                  this.setCursorPosition( this.startFrom);
 
-		
 		let pos = this.getCursorPosition();
-		
+
 		// For some dumbass browsers converts opcodes to characters
 		if (!event.key && event.which != 229)
 			event.key = String.fromCharCode((96 <= event.which && event.which <= 105) ? event.which-48 : event.which);
-		
+
+
 		// Process cursor movement navigation and clear operations
 		if (!(event.key >=0 && event.key <= 9))
-		{	
+		{
 			if (event.key == 'Home' || event.which == 36)
 				this.setCursorPosition( this.startFrom);
 			else
 			if (event.key == 'End' || event.which == 35)
 				this.setCursorPosition( this.mask.length );
 			else
-			if (event.key == 'ArrowLeft' || event.which == 37)					
+			if (event.key == 'ArrowLeft' || event.which == 37)
 				this.setCursorPosition( --pos );
 			else
 			if (event.key == 'ArrowRight' || event.which == 39)
@@ -175,15 +177,23 @@ class PhoneMask
 			else 
 			if (event.key == 'Backspace' || event.which == 8)
 			{
-				if (pos > this.startFrom)
-					this.setCursorPosition( --pos );
-				
-				if(!(MASK_STOP.indexOf(this.result.charAt(pos)) >= 0))
-				{					
-					this.result = this.result.substr(0,pos) + MASK_PLACEHOLDER + this.result.substr(pos+1);
-					this.el.value = this.result;
-					this.setCursorPosition( pos );
+				// Search first nonstopable char
+				while(1)
+				{
+					if (pos > this.startFrom)
+						pos--;
+					else
+						break;
+
+					if(!(MASK_STOP.indexOf(this.result.charAt(pos)) >= 0) && this.result.charAt(pos) != MASK_PLACEHOLDER)
+                                        {
+                                                this.result = this.result.substr(0,pos) + MASK_PLACEHOLDER + this.result.substr(pos+1);
+                                                this.el.value = this.result;
+                                                this.setCursorPosition( pos );
+						break;
+                                        }
 				}
+
 			}
 			else
 			if (event.key == 'Delete'  || event.which == 46)
@@ -194,65 +204,65 @@ class PhoneMask
 					this.el.value = this.result;
 					this.setCursorPosition( pos );
 				}
-				
 			}
+
 			return;
 		}
-		
+
 		// Get character from result string at current position
 		let char = this.result.charAt(pos);
-		
-		if (event.which == 229) // Android Chrome etc
+
+		// Some android shit
+		if (event.which == 229)
 		{
-			pos--;			
+			pos--;
 			event.key = char;
 			this.result = this.result.substr(0,pos) + this.result.substr(pos+2);
-			
-			document.getElementById('wrap').innerHTML = char;
-			document.getElementById('wrap2').innerHTML = pos;
 		}
-				
-		// Move cursor to first changeable character 
+
+		// Move cursor to first changeable character
 		while(MASK_STOP.indexOf(char)>=0 || pos < this.startFrom )
-		{	
+		{
 			this.setCursorPosition(++pos);
 			char = this.result.charAt(pos);
-	
+
 			if (pos >= this.result.length)
-				break;				
+				break;
 		}
-		
+
 		// Check pressed key code, and insert character
-		if (event.key >=0 && event.key <= 9) 
+		if (event.key >=0 && event.key <= 9)
 			this.result = this.result.substr(0,pos) + event.key + this.result.substr(pos+1);
 
-		
+
 		// Resize input data to mask's size
 		this.result = this.result.slice(0,this.mask.length);
-					
+
 		this.el.value = this.result;
-		this.setCursorPosition(++pos);		
+		this.setCursorPosition(++pos);
 	}
-	
+
 	/**
 	 * Set cursor position for input
-	 * 
+	 *
 	 * pos {number} cursor position
 	 */
 	setCursorPosition(pos)
 	{
 		this.el.setSelectionRange(pos,pos);
 
-		// setSelectionRange BUG fix for android 7 chrome 
-		window.clearTimeout(this.tm);
-		this.tm = window.setTimeout(()=>{this.el.setSelectionRange(pos,pos)}, 0);		
-		
+		 window.clearTimeout(this.tm);
+
+		// setSelectionRange BUG fix for android  chrome
+		this.tm = window.setTimeout(()=>
+		{
+			this.el.setSelectionRange(pos,pos);
+		}, 0);
 	}
-	
-	
+
 	/**
 	 * Get current cursor position for input
-	 * 
+	 *
 	 * @return {number}
 	 */
 	getCursorPosition()
